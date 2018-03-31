@@ -10,37 +10,35 @@ import java.util.Enumeration;
 
 public class Helper {
     public static Object getData(Class<?> aClass,HttpServletRequest req) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
-        Enumeration<String>  enumeration=req.getParameterNames();
         Object object=aClass.newInstance();
-        try {
-            while (enumeration.hasMoreElements()) {
-                String paramName = enumeration.nextElement();
-                String paramValue = req.getParameter(paramName);
-                Field field = aClass.getDeclaredField(paramName);
-                String field_type=field.getType().getSimpleName();
-                System.out.println(field.getType());
-                System.out.println(initcap(paramName));
-                Method method=aClass.getDeclaredMethod("set"+initcap(paramName),field.getType());
-                if (field_type.equalsIgnoreCase("String")){
-                    method.invoke(object,paramValue);
-                }else if ("integer".equalsIgnoreCase(field_type)||"int".equalsIgnoreCase(field_type)){
-                    method.invoke(object,Integer.parseInt(paramValue));
-                }else if ("double".equalsIgnoreCase(field_type)){
-                    method.invoke(object,Double.parseDouble(paramValue));
-                }else if ("data".equalsIgnoreCase(field_type)){
-                    method.invoke(object,new SimpleDateFormat("yyyy-MM-dd").parse(paramValue));
+        Field[] fields=aClass.getFields();
+        if (fields.length!=0) {
+            try {
+                for (Field field:fields) {
+                    String paramName=field.getName();
+                    String field_type=field.getType().getSimpleName();
+                    String paramValue=req.getParameter(paramName);
+                    field.setAccessible(true);
+                    if (field_type.equalsIgnoreCase("String")) {
+                        field.set(object, paramValue);
+                    } else if ("integer".equalsIgnoreCase(field_type) || "int".equalsIgnoreCase(field_type)) {
+                        field.set(object, Integer.parseInt(paramValue));
+                    } else if ("double".equalsIgnoreCase(field_type)) {
+                        field.set(object, Double.parseDouble(paramValue));
+                    } else if ("date".equalsIgnoreCase(field_type)) {
+                        field.set(object, new SimpleDateFormat("yyyy-MM-dd").parse(paramValue));
+                    } else if ("long".equalsIgnoreCase(field_type)){
+                        field.set(object,Long.parseLong(paramValue));
+                    } else if ("float".equalsIgnoreCase(field_type)){
+                        field.set(object,Float.parseFloat(paramValue));
+                    } else if ("boolean".equalsIgnoreCase(field_type)){
+                        field.set(object,Boolean.valueOf(paramValue));
+                    }
                 }
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
         }
         return object;
-    }
-    public static String initcap(String str){
-        return str.substring(0,1).toUpperCase().concat(str.substring(1).toLowerCase());
     }
 }
